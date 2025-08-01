@@ -1,7 +1,9 @@
 
-# Football Manager Game
 
-Welcome to the Football Manager Game, a text-based football management simulation written in C. Take control of your own club, manage your squad, compete in a league, and lead your team to glory!
+# Futsal Manager
+
+
+Welcome to Futsal Manager, a text-based futsal management simulation written in C. Take control of your own club, manage your squad, compete in a league, and lead your team to glory!
 
 ---
 
@@ -36,10 +38,9 @@ Welcome to the Football Manager Game, a text-based football management simulatio
    - Your initial squad is randomly generated.
 
 2. **Main Menu Options:**
-   - `1. List Players` — View your squad and optionally sell players.
-   - `2. Print Stats` — View your manager level and club money.
-   - `3. Play League Match` — (if season is ongoing) Play the next match.
-   - `4. Show League Table` — View the current league standings.
+   - `1. Play Match` — Play the next league match (if the season is ongoing).
+   - `2. Sell Players` — View your squad and optionally sell players.
+   - `3. Show Table` — View the current league standings.
    - `0. Quit` — Exit the game.
 
 3. **Match Day:**
@@ -59,11 +60,11 @@ Welcome to the Football Manager Game, a text-based football management simulatio
 1. Clone or download this repository to your local machine.
 2. Compile the source code using a C compiler:
    ```sh
-   gcc fm.c -o football_manager
+   gcc fm.c -o futsal_manager
    ```
 3. Run the game:
    ```sh
-   ./football_manager
+   ./futsal_manager
    ```
 4. Follow the on-screen prompts to manage your team and progress through the league.
 

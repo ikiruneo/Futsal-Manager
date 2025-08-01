@@ -84,11 +84,13 @@ int main() {
         static int lastReward = 0;
         static int lastManagerLevel = 1;
         if (currentMatchday < 9) {
-            printf("\nMatchday #%d\n", currentMatchday + 1);
+            printf("\nMatchday #%d\n\n", currentMatchday + 1);
+            printf("Manager Level: %d\n", managerLevel);
+            printf("Club Money: %.2f€\n\n", clubMoney);
         } else {
             printf("\nSeason over.\n");
             showLeagueTable();
-            printf("\n"); // Add a blank line between table and menu
+            printf("\n");
 
             // Find my position and reward for display
             int myPosition = 0;
@@ -111,7 +113,6 @@ int main() {
             }
             int seasonReward = 500 - (myPosition - 1) * 10;
             if (seasonReward < 0) seasonReward = 0;
-            // Only print if changed (to avoid duplicate prints)
             if (lastPosition != myPosition || lastReward != seasonReward || lastManagerLevel != managerLevel) {
                 printf("You finished in position %d.\n", myPosition);
                 printf("You received %d€ for your final position.\n", seasonReward);
@@ -120,46 +121,65 @@ int main() {
                 lastReward = seasonReward;
                 lastManagerLevel = managerLevel;
             }
+            printf("Manager Level: %d\n", managerLevel);
+            printf("Club Money: %.2f€\n\n", clubMoney);
         }
-        printf("1. List Players\n");
-        printf("2. Print Stats\n");
+
+        // Main menu options
         if (currentMatchday < 9) {
-            printf("3. Play League Match\n");
+            printf("1. Play Match\n");
+            printf("2. Sell Players\n");
+            printf("3. Show Table\n");
+            printf("0. Quit\n\n");
+        } else {
+            printf("2. Sell Players\n");
+            printf("3. Show Table\n");
+            printf("0. Quit\n\n");
         }
-        printf("4. Show League Table\n");
-        printf("0. Quit\n");
         printf("Enter your choice: ");
-        
+
         if (fgets(input, sizeof(input), stdin)) {
             choice = atoi(input);
         } else {
             choice = -1;
         }
 
-        switch (choice) {
-            case 1:
-                listPlayers(players, &numPlayers);
-                break;
-            case 2:
-                printStats();
-                break;
-            case 3:
-                if (currentMatchday < 9) {
+        // Menu logic
+        if (currentMatchday < 9) {
+            switch (choice) {
+                case 1:
                     playLeagueMatch(players, &numPlayers);
-                } else {
-                    printf("Season is over! No more matches.\n");
-                }
-                break;
-            case 4:
-                showLeagueTable();
-                break;
-            case 0:
-                printf("Exiting the game. Goodbye!\n");
-                break;
-            default:
-                if (choice >= 0) {
-                    printf("Invalid choice. Please try again.\n");
-                }
+                    break;
+                case 2:
+                    listPlayers(players, &numPlayers);
+                    break;
+                case 3:
+                    showLeagueTable();
+                    break;
+                case 0:
+                    printf("Exiting the game. Goodbye!\n");
+                    break;
+                default:
+                    if (choice >= 0) {
+                        printf("Invalid choice. Please try again.\n");
+                    }
+            }
+        } else {
+            switch (choice) {
+                case 2:
+                    listPlayers(players, &numPlayers);
+                    break;
+                case 3:
+                    showLeagueTable();
+                    break;
+                case 0:
+                    printf("Exiting the game. Goodbye!\n");
+                    break;
+                default:
+                    if (choice >= 0) {
+                        printf("Invalid choice. Please try again.\n");
+                    }
+            }
         }
     } while (choice != 0);
 
