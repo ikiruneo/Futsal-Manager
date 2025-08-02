@@ -227,7 +227,7 @@ void sellPlayer(Player **players_ptr, int *numPlayers, int playerIndex) {
     Player *players = *players_ptr;
     clubMoney += players[playerIndex].value;
     printf("\nSold %s for %.0f€.\n", players[playerIndex].name, players[playerIndex].value);
-    cross_platform_sleep(2);
+    cross_platform_sleep(0.5);
 
     for (int i = playerIndex; i < *numPlayers - 1; ++i) {
         players[i] = players[i + 1];
@@ -382,7 +382,7 @@ void playLeagueMatch(Player **players, int *numPlayers) {
 
     clearScreen();
     printf("The match is about to begin...\n");
-    cross_platform_sleep(2);
+    cross_platform_sleep(1);
 
     double myFinalBasePower = 0;
     for (int i = 0; i < *numPlayers; ++i) {
@@ -396,8 +396,8 @@ void playLeagueMatch(Player **players, int *numPlayers) {
     double fitnessMultiplier = 0.5 + (league[opponent_idx].fitness / 200.0);
     double opponentFinalBasePower = league[opponent_idx].skillRating * fitnessMultiplier * difficultyMultiplier;
 
-    double myTotalPower = myFinalBasePower + (rand() % 21);
-    double opponentTotalPower = opponentFinalBasePower + (rand() % 21);
+    double myTotalPower = myFinalBasePower + (rand() % 16);
+    double opponentTotalPower = opponentFinalBasePower + (rand() % 16);
 
     int myGoals = 0, oppGoals = 0;
 
@@ -405,24 +405,23 @@ void playLeagueMatch(Player **players, int *numPlayers) {
         clearScreen();
         printf("==================== MATCH LIVE ====================\n\n");
         
-        if (myTotalPower > (rand() % 185)) {
+        if (myTotalPower > (rand() % 240)) {
             myGoals++;
         }
-        if (opponentTotalPower > (rand() % 185)) {
+        if (opponentTotalPower > (rand() % 240)) {
             oppGoals++;
         }
 
-        printf("\n");
-        printf("                 %d' MINUTE\n", minute * 10);
-        printf("         %s %d - %d %s\n", myTeamName, myGoals, oppGoals, league[opponent_idx].name);
+        printf("                    %d' MINUTE\n", minute * 10);
+        printf("           %s %d - %d %s\n", myTeamName, myGoals, oppGoals, league[opponent_idx].name);
         printf("\n====================================================\n");
         
-        cross_platform_sleep(1);
+        cross_platform_sleep(1.5);
     }
 
     clearScreen();
     printf("\n==================== FULL TIME ======================\n");
-    printf("         %s %d - %d %s\n", myTeamName, myGoals, oppGoals, league[opponent_idx].name);
+    printf("            %s %d - %d %s\n", myTeamName, myGoals, oppGoals, league[opponent_idx].name);
     printf("=====================================================\n\n");
     
     for (int i = 0; i < *numPlayers; ++i) {
@@ -524,7 +523,7 @@ void initLeague(void) {
         league[i].goalsFor = 0; 
         league[i].goalsAgainst = 0; 
         league[i].gamesPlayed = 0;
-        league[i].skillRating = 40 + (rand() % 36);
+        league[i].skillRating = 30 + (rand() % 36);
         league[i].fitness = 100;
     }
 }
@@ -535,7 +534,7 @@ void evolveLeague() {
             int change = (rand() % 11) - 5;
             league[i].skillRating += change;
             if (league[i].skillRating > 95) league[i].skillRating = 95;
-            if (league[i].skillRating < 40) league[i].skillRating = 40;
+            if (league[i].skillRating < 30) league[i].skillRating = 30;
         }
         league[i].points = 0; 
         league[i].goalsFor = 0; 
@@ -600,15 +599,15 @@ void endSeason(Player **players_ptr, int *numPlayers) {
     if (myPosition == 1) {
         managerLevel++;
         printf("You are the champion! Manager level has increased to %d!\n", managerLevel);
-    } else if (myPosition > 3) {
+    } else if (myPosition > 7) {
         if (managerLevel > 1) {
             managerLevel--;
             printf("A poor season finish. Your manager level has decreased to %d.\n", managerLevel);
         } else {
-            printf("You finished outside the top 3, but your level is already at the minimum.\n");
+            printf("You finished in the bottom 3, but your level is already at the minimum.\n");
         }
     } else {
-        printf("A good season! Your manager level remains at %d.\n", managerLevel);
+        printf("Your manager level remains at %d.\n", managerLevel);
     }
 
     printf("\nUpdating player stats for new season...\n");
