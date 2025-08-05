@@ -24,7 +24,7 @@ typedef struct {
     int goalsAgainst;
     int gamesPlayed;
     int skillRating;
-    int fitness; // MODIFIED: Added fitness for CPU teams
+    int fitness;
 } Team;
 
 // --- Function Declarations (Prototypes) ---
@@ -76,6 +76,8 @@ int main() {
         return 1;
     }
     
+    int skillDistribution[] = {5, 4, 4, 3, 3, 3, 2, 2};
+    
     for (int i = 0; i < numPlayers; ++i) {
         int nameIndex, tries = 0;
         do {
@@ -84,8 +86,10 @@ int main() {
             players[i].name[sizeof(players[i].name) - 1] = '\0';
             tries++;
         } while (playerNameExists(players, i, players[i].name) && tries < 100);
-        players[i].skill = 1 + (rand() % 5);
-        players[i].energy = (rand() % 5) + 6;
+        
+        // Set specific skill based on user's distribution
+        players[i].skill = skillDistribution[i];
+        players[i].energy = 10; // Start all players with 100% fitness
         players[i].value = players[i].skill * 100.0 + players[i].energy * 10.0;
     }
     
@@ -126,31 +130,12 @@ int main() {
                  endOfSeasonProcessed = 1;
             }
             
-            printf("\n=============== END OF SEASON ===============\n");
-            printf("1. Start New Season\n");
-            printf("2. Manage Team\n");
-            printf("3. Show Final Table\n\n");
-            printf("Enter your choice: ");
-
-            if (fgets(input, sizeof(input), stdin)) {
-                choice = atoi(input);
-            } else {
-                break;
-            }
-
-            switch (choice) {
-                case 1:
-                    season++;
-                    currentMatchday = 0;
-                    evolveLeague();
-                    endOfSeasonProcessed = 0;
-                    printf("\nNew season started! Good luck!\nPress Enter to continue...");
-                    getchar();
-                    break;
-                case 2: listPlayers(&players, &numPlayers); break;
-                case 3: clearScreen(); showLeagueTable(); printf("\nPress Enter to continue..."); getchar(); break;
-                default: break;
-            }
+            season++;
+            currentMatchday = 0;
+            evolveLeague();
+            endOfSeasonProcessed = 0;
+            printf("\nNew season started! Good luck!\nPress Enter to continue...");
+            getchar();
         }
     }
 
@@ -285,7 +270,6 @@ void playLeagueMatch(Player **players, int *numPlayers) {
     int isSelected[100] = {0};
     for (int i = 0; i < 5; i++) { isSelected[i] = 1; }
 
-    // MODIFIED: Flattened Difficulty Curve
     double difficultyMultiplier = 1.0;
     if (managerLevel == 1)      difficultyMultiplier = 0.75;
     else if (managerLevel == 2) difficultyMultiplier = 0.90;
@@ -310,19 +294,17 @@ void playLeagueMatch(Player **players, int *numPlayers) {
             myAvgFitnessPercent = (myTotalEnergy / selectionCount) * 10.0;
         }
         
-        // MODIFIED: Better "Est: Skill" Formula
         double opponent_base_rating = league[opponent_idx].skillRating;
         int min_est_skill = 10, max_est_skill = 22;
-        double rating_range = 75.0 - 40.0;
+        double rating_range = 50.0 - 30.0;
         double skill_range = max_est_skill - min_est_skill;
-        double strength_percentage = (opponent_base_rating - 40.0) / rating_range;
+        double strength_percentage = (opponent_base_rating - 30.0) / rating_range;
         if (strength_percentage < 0.0) strength_percentage = 0.0;
         if (strength_percentage > 1.0) strength_percentage = 1.0;
         int opponentDisplaySkill = min_est_skill + (int)(strength_percentage * skill_range);
         
         char myFitnessStr[10], oppFitnessStr[10];
         sprintf(myFitnessStr, "%.0f%%", myAvgFitnessPercent);
-        // MODIFIED: Use the real opponent fitness for display
         sprintf(oppFitnessStr, "%d%%", league[opponent_idx].fitness);
         
         printf("====================== MATCH OVERVIEW ======================\n");
@@ -387,13 +369,15 @@ void playLeagueMatch(Player **players, int *numPlayers) {
     double myFinalBasePower = 0;
     for (int i = 0; i < *numPlayers; ++i) {
         if (isSelected[i]) {
-            myFinalBasePower += ((*players)[i].skill * 10.0) + ((*players)[i].energy * 3.0);
+            // More balanced weight between skill and fitness
+            // Skill: 45%, Fitness: 45%, Random factor: 10%
+            myFinalBasePower += ((*players)[i].skill * 11.0) + ((*players)[i].energy * 4.0);
         }
     }
     myFinalBasePower /= 5.0;
 
     // MODIFIED: Opponent power now depends on their real fitness
-    double fitnessMultiplier = 0.5 + (league[opponent_idx].fitness / 200.0);
+    double fitnessMultiplier = 0.6 + (league[opponent_idx].fitness / 200.0);
     double opponentFinalBasePower = league[opponent_idx].skillRating * fitnessMultiplier * difficultyMultiplier;
 
     double myTotalPower = myFinalBasePower + (rand() % 16);
@@ -405,10 +389,10 @@ void playLeagueMatch(Player **players, int *numPlayers) {
         clearScreen();
         printf("==================== MATCH LIVE ====================\n\n");
         
-        if (myTotalPower > (rand() % 240)) {
+        if (myTotalPower > (rand() % 250)) {
             myGoals++;
         }
-        if (opponentTotalPower > (rand() % 240)) {
+        if (opponentTotalPower > (rand() % 250)) {
             oppGoals++;
         }
 
@@ -523,7 +507,7 @@ void initLeague(void) {
         league[i].goalsFor = 0; 
         league[i].goalsAgainst = 0; 
         league[i].gamesPlayed = 0;
-        league[i].skillRating = 30 + (rand() % 36);
+        league[i].skillRating = 26 + (rand() % 21);
         league[i].fitness = 100;
     }
 }
@@ -533,7 +517,7 @@ void evolveLeague() {
         if(i > 0) {
             int change = (rand() % 11) - 5;
             league[i].skillRating += change;
-            if (league[i].skillRating > 95) league[i].skillRating = 95;
+            if (league[i].skillRating > 50) league[i].skillRating = 50;
             if (league[i].skillRating < 30) league[i].skillRating = 30;
         }
         league[i].points = 0; 
@@ -617,7 +601,7 @@ void endSeason(Player **players_ptr, int *numPlayers) {
             (*players_ptr)[i].energy = ((*players_ptr)[i].energy + 5 > 10) ? 10 : (*players_ptr)[i].energy + 5;
             (*players_ptr)[i].value = (*players_ptr)[i].skill * 100.0 + (*players_ptr)[i].energy * 10.0;
         }
-        printf("All players' skills decreased by 1 (min 1) and energy increased.\n");
+        printf("All players' skills decreased by 1 and energy is restored.\n");
     }
     printf("\nPress Enter to continue to the off-season menu...");
     getchar();
@@ -674,8 +658,8 @@ void simulateOtherMatches(int matchday) {
                 double team1_total_power = team1_base_power + (rand() % 21);
                 double team2_total_power = team2_base_power + (rand() % 21);
 
-                int team1Goals = (int)(team1_total_power / 25.0);
-                int team2Goals = (int)(team2_total_power / 25.0);
+                int team1Goals = (int)(team1_total_power / 20.0);
+                int team2Goals = (int)(team2_total_power / 20.0);
                 
                 league[i].goalsFor += team1Goals; league[i].goalsAgainst += team2Goals;
                 league[j].goalsFor += team2Goals; league[j].goalsAgainst += team1Goals;

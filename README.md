@@ -7,16 +7,12 @@ Welcome to Futsal Manager, a text-based futsal management simulation written in 
 
 ---
 
-## Features
+## Gameplay
 
-- **Player Management:**
-  - List all players in your squad with detailed stats (name, skill, energy, value).
+- **Team Management:**
+  - Build and maintain your squad with players having skill, energy, and value.
   - Sell players to increase your club's funds (must keep at least 5 players).
   - Buy new random players after each match (if you have enough money).
-
-- **Financial Management:**
-  - Track your club's money and manager level.
-  - Earn money for match results and end-of-season position.
 
 - **League Competition:**
   - Compete in a 10-team league, playing 9 matches per season.
@@ -29,6 +25,11 @@ Welcome to Futsal Manager, a text-based futsal management simulation written in 
   - Manager level increases if you win the league.
   - Players' skills decrease and energy increases at the end of each season.
 
+- **Match Simulation:**
+  - Experience real-time match simulation with live updates.
+  - Your lineup selection significantly impacts match outcomes.
+  - Fitness levels affect player performance in matches.
+
 ---
 
 ## Controls & Gameplay
@@ -39,13 +40,14 @@ Welcome to Futsal Manager, a text-based futsal management simulation written in 
 
 2. **Main Menu Options:**
    - `1. Play Match` — Play the next league match (if the season is ongoing).
-   - `2. Sell Players` — View your squad and optionally sell players.
+   - `2. Manage Team` — View and manage your squad, including selling players.
    - `3. Show Table` — View the current league standings.
    - `0. Quit` — Exit the game.
 
 3. **Match Day:**
    - See your opponent's average skill and energy.
    - Select 5 players by their numbers to form your starting lineup.
+   - Experience a real-time match simulation with live updates.
    - After the match, see the result, awarded money, and updated league table.
    - Buy a new random player if you wish (and can afford it).
 
