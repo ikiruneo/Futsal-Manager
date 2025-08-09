@@ -7,6 +7,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#include <math.h>
 #endif
 
 // Struct Definitions
@@ -51,6 +52,7 @@ Team league[10];
 char myTeamName[30];
 int currentMatchday = 0;
 int season = 1;
+int negotiationsLeftThisSeason = 10;
 
 char playerNames[][20] = {
     "Messi", "Ronaldo", "Mbappe", "Neymar", "Benzema", "Salah", "Kane",
@@ -318,7 +320,7 @@ void playLeagueMatch(Player **players, int *numPlayers) {
         printf("==========================================================\n\n");
         printf("1. Simulate Match\n");
         printf("2. Change Player Selection\n");
-        printf("0. Forfeit Match (Cancel)\n\n");
+        printf("0. Back to Main Menu\n\n");
         printf("Enter your choice: ");
 
         char overviewChoiceInput[10];
@@ -459,36 +461,118 @@ void buyRandomPlayer(Player **players_ptr, int *numPlayers) {
     randomPlayer.skill = 2 + (rand() % 4);
     randomPlayer.energy = rand() % 10 + 1;
     randomPlayer.value = randomPlayer.skill * 100.0 + randomPlayer.energy * 10.0;
+    
+    // Store original value for negotiations
+    double originalValue = randomPlayer.value;
+    double currentValue = originalValue;
+    int negotiationFailed = 0; // Flag to track if negotiation has failed for this player
+    
+    // Constant failure chance for all negotiations
+    const int FAILURE_CHANCE = 25;
 
-    printf("\n--- Transfer Market ---\n");
-    printf("A player is available for purchase! (Club Money: %.2f€)\n", clubMoney);
-    printf("Name: %-15s Skill: %-5d Energy: %-5d Value: %.0f€\n", randomPlayer.name, randomPlayer.skill, randomPlayer.energy, randomPlayer.value);
-
-    printf("\nPress 1 to buy, or any other key to skip: ");
-    char input[10];
-    fgets(input, sizeof(input), stdin);
-
-    if (atoi(input) == 1) {
-        if (clubMoney >= randomPlayer.value) {
-            clubMoney -= randomPlayer.value;
-            Player *new_players = realloc(*players_ptr, (*numPlayers + 1) * sizeof(Player));
-            if (new_players == NULL) {
-                printf("FATAL: Memory allocation failed!\n");
-                clubMoney += randomPlayer.value;
-                return;
-            }
-            *players_ptr = new_players;
-            (*players_ptr)[*numPlayers] = randomPlayer;
-            (*numPlayers)++;
-            printf("Congratulations! You have purchased %s!\n", randomPlayer.name);
-        } else {
-            printf("Sorry, you don't have enough money.\n");
+    while (1) {
+        clearScreen();
+        printf("\n================ Transfer Market ================\n");
+        printf("A player is available for purchase! (Club Money: %.2f€)\n", clubMoney);
+        printf("Name: %-15s Skill: %-5d Energy: %-5d Value: %.0f€\n", randomPlayer.name, randomPlayer.skill, randomPlayer.energy, currentValue);
+        
+        if (negotiationsLeftThisSeason > 0 && !negotiationFailed) {
+            printf("\nNegotiations left this season: %d\n", negotiationsLeftThisSeason);
+        } else if (negotiationFailed) {
+            printf("\n❌ Negotiation failed for this player!\n");
         }
-    } else {
-        printf("You decided not to buy the player.\n");
+        printf("\n=================================================\n");
+        
+        printf("\nTransfer Actions:\n");
+        if (clubMoney >= currentValue) {
+            printf("  1. Buy Player\n");
+            if (negotiationsLeftThisSeason > 0 && !negotiationFailed) {
+                printf("  2. Negotiate Price\n");
+            }
+            printf("  0. Skip\n");
+            printf("\nEnter your choice: ");
+        } else {
+            printf("  You don't have enough money to buy this player.\n");
+            printf("  Press Enter to continue...\n");
+        }
+        
+        char input[10];
+        if (clubMoney >= currentValue) {
+            fgets(input, sizeof(input), stdin);
+        } else {
+            getchar();
+            printf("\nReturning to main menu...\n");
+            cross_platform_sleep(1);
+            return;
+        }
+
+        // Check if user just pressed Enter (skip)
+        int choice = -1;
+        if (input[0] == '\n' || input[0] == '\0') {
+            choice = 0; // Treat Enter as skip
+        } else {
+            choice = atoi(input);
+        }
+        
+        if (choice == 1) {
+            // Buy player
+            if (clubMoney >= currentValue) {
+                clubMoney -= currentValue;
+                Player *new_players = realloc(*players_ptr, (*numPlayers + 1) * sizeof(Player));
+                if (new_players == NULL) {
+                    printf("FATAL: Memory allocation failed!\n");
+                    clubMoney += currentValue;
+                    return;
+                }
+                *players_ptr = new_players;
+                (*players_ptr)[*numPlayers] = randomPlayer;
+                (*numPlayers)++;
+                printf("\n✅ Congratulations! You have purchased %s for %.0f€!\n", randomPlayer.name, currentValue);
+                if (currentValue < originalValue) {
+                    printf("You saved %.0f€ through negotiation!\n", originalValue - currentValue);
+                }
+                printf("New club balance: %.2f€\n", clubMoney);
+            } else {
+                printf("Sorry, you don't have enough money.\n");
+            }
+            break;
+        } else if (choice == 2 && negotiationsLeftThisSeason > 0 && !negotiationFailed) {
+            // Negotiation attempt
+            negotiationsLeftThisSeason--;
+            
+            // Check if negotiation fails
+            int randValue = rand() % 100;
+            if (randValue < FAILURE_CHANCE) {
+                // Negotiation failed
+                printf("\n❌ Negotiation failed! The player is now demanding a 25%% premium.\n");
+                currentValue = originalValue * 1.25;
+                printf("New price: %.0f€\n", currentValue);
+                negotiationFailed = 1; // Set flag to prevent further negotiations with this player
+                printf("Press Enter to continue...");
+                getchar();
+            } else {
+                // Negotiation succeeded
+                printf("\n✅ Negotiation successful! The player has agreed to a 10%% reduction.\n");
+                currentValue = currentValue * 0.9;
+                printf("New price: %.0f€\n", currentValue);
+                printf("Press Enter to continue...");
+                getchar();
+            }
+        } else if (choice == 0) {
+            // Skip player (also handles Enter key)
+            printf("\nYou decided not to buy the player.\n");
+            break;
+        } else {
+            printf("\nInvalid choice. Please try again.\n");
+            printf("Press Enter to continue...");
+            getchar();
+        }
     }
+    
     printf("\nPress Enter to return to the main menu...");
     getchar();
+    printf("\nReturning to main menu...\n");
+    cross_platform_sleep(1);
 }
 
 void initLeague(void) {
@@ -603,6 +687,11 @@ void endSeason(Player **players_ptr, int *numPlayers) {
         }
         printf("All players' skills decreased by 1 and energy is restored.\n");
     }
+    
+    // Reset negotiations for the new season
+    negotiationsLeftThisSeason = 10;
+    printf("Negotiation attempts reset to 10 for the new season.\n");
+    
     printf("\nPress Enter to continue to the off-season menu...");
     getchar();
 }
@@ -629,52 +718,152 @@ void sortPlayers(Player *players, int numPlayers) {
 }
 
 void simulateOtherMatches(int matchday) {
+    // Create an array of teams that haven't played yet (excluding player team and current opponent)
+    int availableTeams[10];
+    int availableCount = 0;
+    
+    // Mark teams that have already played
     int hasPlayed[10] = {0};
-    hasPlayed[0] = 1;
+    hasPlayed[0] = 1; // Player's team
     if (matchday > 0 && matchday < 10) {
-        hasPlayed[matchday] = 1; 
+        hasPlayed[matchday] = 1; // Current opponent
         league[matchday].fitness -= 25;
+    }
+    
+    // Build list of available teams
+    for (int i = 1; i < 10; i++) {
+        if (!hasPlayed[i]) {
+            availableTeams[availableCount++] = i;
+        }
+    }
+    
+    // Shuffle the available teams to create random pairings
+    for (int i = 0; i < availableCount; i++) {
+        int j = i + rand() / (RAND_MAX / (availableCount - i) + 1);
+        int temp = availableTeams[j];
+        availableTeams[j] = availableTeams[i];
+        availableTeams[i] = temp;
     }
     
     double difficultyMultiplier = 1.0;
     if (managerLevel == 1) difficultyMultiplier = 0.85;
     else difficultyMultiplier = 1.0 + ( (managerLevel - 2) * 0.05 );
 
-    for (int i = 1; i < 10; i++) {
-        if (hasPlayed[i]) continue;
-        for (int j = i + 1; j < 10; j++) {
-            if (!hasPlayed[j]) {
-                hasPlayed[i] = 1; hasPlayed[j] = 1;
-                
-                double fit_mult_i = 0.5 + (league[i].fitness / 200.0);
-                double fit_mult_j = 0.5 + (league[j].fitness / 200.0);
-                
-                double team1_base_power = league[i].skillRating * fit_mult_i;
-                double team2_base_power = league[j].skillRating * fit_mult_j;
-
-                if (team1_base_power > team2_base_power) team1_base_power *= difficultyMultiplier;
-                else team2_base_power *= difficultyMultiplier;
-
-                double team1_total_power = team1_base_power + (rand() % 21);
-                double team2_total_power = team2_base_power + (rand() % 21);
-
-                int team1Goals = (int)(team1_total_power / 20.0);
-                int team2Goals = (int)(team2_total_power / 20.0);
-                
-                league[i].goalsFor += team1Goals; league[i].goalsAgainst += team2Goals;
-                league[j].goalsFor += team2Goals; league[j].goalsAgainst += team1Goals;
-                
-                if (team1Goals > team2Goals) { league[i].points += 3; } 
-                else if (team1Goals == team2Goals) { league[i].points += 1; league[j].points += 1; } 
-                else { league[j].points += 3; }
-                
-                league[i].gamesPlayed++; league[j].gamesPlayed++;
-
-                league[i].fitness -= 25;
-                league[j].fitness -= 25;
-                break; 
+    printf("\n--- Other Match Results ---\n");
+    
+    // Play 4 matches with proper pairings
+    int matchesPlayed = 0;
+    for (int i = 0; i < availableCount - 1; i += 2) {
+        if (matchesPlayed >= 4) break;
+        
+        int team1 = availableTeams[i];
+        int team2 = availableTeams[i + 1];
+        
+        // Calculate base power with fitness factor
+        double fitnessMultiplier1 = 0.6 + (league[team1].fitness / 250.0);
+        double fitnessMultiplier2 = 0.6 + (league[team2].fitness / 250.0);
+        
+        double team1Power = league[team1].skillRating * fitnessMultiplier1;
+        double team2Power = league[team2].skillRating * fitnessMultiplier2;
+        
+        // Apply difficulty multiplier
+        if (team1Power > team2Power) team1Power *= difficultyMultiplier;
+        else team2Power *= difficultyMultiplier;
+        
+        // Determine the favorite team (higher power)
+        int favoriteTeam = (team1Power > team2Power) ? team1 : team2;
+        double powerDifference = fabs(team1Power - team2Power);
+        
+        // Base goals - higher skilled teams should score more on average
+        double baseGoals = powerDifference / 15.0; // Scale the difference to goals
+        if (baseGoals > 3.0) baseGoals = 3.0; // Cap the advantage
+        
+        // Generate goals with more variance
+        int team1Goals = 0;
+        int team2Goals = 0;
+        
+        // Simulate the match with more realistic scoring
+        for (int minute = 1; minute <= 9; minute++) {
+            // Each team has a chance to score each "minute"
+            double team1Chance = team1Power / 150.0; // Base chance
+            double team2Chance = team2Power / 150.0; // Base chance
+            
+            // Add some randomness
+            team1Chance += ((double)rand() / RAND_MAX) * 0.5;
+            team2Chance += ((double)rand() / RAND_MAX) * 0.5;
+            
+            // Favorite team gets a slight boost
+            if (favoriteTeam == team1) team1Chance *= 1.15;
+            else team2Chance *= 1.15;
+            
+            // Convert to actual goals (0-2 per "minute" to allow for bursts)
+            if (((double)rand() / RAND_MAX) < team1Chance * 0.15) {
+                team1Goals += 1 + (rand() % 2); // 1-2 goals
+            }
+            if (((double)rand() / RAND_MAX) < team2Chance * 0.15) {
+                team2Goals += 1 + (rand() % 2); // 1-2 goals
             }
         }
+        
+        // Apply the base advantage for the stronger team
+        if (favoriteTeam == team1) {
+            team1Goals += (int)(baseGoals);
+        } else {
+            team2Goals += (int)(baseGoals);
+        }
+        
+        // Add excitement - chance for blowout games or goalless draws
+        if (powerDifference > 15) {
+            // Big difference in skill - chance for blowout
+            if (rand() % 4 == 0) { // 25% chance
+                if (favoriteTeam == team1) team1Goals += 2 + (rand() % 3); // 2-4 extra
+                else team2Goals += 2 + (rand() % 3); // 2-4 extra
+            }
+        } else if (powerDifference < 5) {
+            // Close match - chance for low scoring or draws
+            if (rand() % 3 == 0) { // 33% chance
+                // Reduce goals for a tight match
+                team1Goals = (team1Goals > 1) ? team1Goals - (1 + rand() % 2) : team1Goals;
+                team2Goals = (team2Goals > 1) ? team2Goals - (1 + rand() % 2) : team2Goals;
+                if (team1Goals < 0) team1Goals = 0;
+                if (team2Goals < 0) team2Goals = 0;
+            }
+        }
+        
+        // Rare events - goalless draws or high scoring games
+        if (rand() % 20 == 0) { // 5% chance for goalless draw
+            team1Goals = 0;
+            team2Goals = 0;
+        } else if (rand() % 25 == 0) { // 4% chance for high scoring
+            team1Goals += 2 + (rand() % 4); // 2-5 extra goals
+            team2Goals += 1 + (rand() % 3); // 1-3 extra goals
+        }
+        
+        // Cap goals to prevent unrealistic scores
+        if (team1Goals > 8) team1Goals = 6 + (rand() % 3); // 6-8
+        if (team2Goals > 8) team2Goals = 6 + (rand() % 3); // 6-8
+        
+        league[team1].goalsFor += team1Goals; league[team1].goalsAgainst += team2Goals;
+        league[team2].goalsFor += team2Goals; league[team2].goalsAgainst += team1Goals;
+        
+        if (team1Goals > team2Goals) { 
+            league[team1].points += 3;
+            printf("%s %d-%d %s\n", league[team1].name, team1Goals, team2Goals, league[team2].name);
+        } 
+        else if (team1Goals == team2Goals) { 
+            league[team1].points += 1; league[team2].points += 1;
+            printf("%s %d-%d %s\n", league[team1].name, team1Goals, team2Goals, league[team2].name);
+        } 
+        else { 
+            league[team2].points += 3;
+            printf("%s %d-%d %s\n", league[team1].name, team1Goals, team2Goals, league[team2].name);
+        }
+        
+        league[team1].gamesPlayed++; league[team2].gamesPlayed++;
+        league[team1].fitness -= 25;
+        league[team2].fitness -= 25;
+        
+        matchesPlayed++;
     }
     
     const int MINIMUM_FITNESS = 35;
